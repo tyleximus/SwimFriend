@@ -5,7 +5,6 @@
     <header class="navbar navbar-light px-3" style="background-color: var(--bs-success);">
         <img src="img/chill.png" style="height:48px" class="me-2" />
         <span class="navbar-brand mb-0 h4 text-white">Conference Score Pad</span>
-        <button class="btn btn-outline-light ms-auto" @onclick="ToggleTotals">@(!showTotals ? "Show Totals" : "Hide Totals")</button>
     </header>
 
     <main class="flex-fill container py-3">
@@ -18,7 +17,5 @@
 </div>
 
 @code {
-    [CascadingParameter] public TotalsVisibilityService? TotalsVisibility { get; set; }
-    private bool showTotals => TotalsVisibility?.ShowTotals == true;
-    private void ToggleTotals() => TotalsVisibility?.Toggle();
+
 }

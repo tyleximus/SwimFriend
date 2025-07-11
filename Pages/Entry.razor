@@ -11,7 +11,7 @@
 <EditForm Model="@formModel" OnValidSubmit="SaveResult">
     <div class="mb-2">
         <label>Event</label>
-        <select class="form-select" @bind="formModel.EventNumber">
+        <select class="form-select" @bind="formModel.EventNumber" @bind:after="FocusSwimmerAsync">
             <option value="0">Select...</option>
             @foreach (var ev in EventLookup.All.Values.OrderBy(e=>e.Number))
             {
@@ -21,7 +21,7 @@
     </div>
     <div class="mb-2">
         <label>Swimmer</label>
-        <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" />
+        <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" @ref="swimmerInput" />
         <datalist id="swimmers">
             @foreach(var s in Roster.All.OrderBy(s=>s.Display))
             {
@@ -60,6 +60,9 @@
 </table>
 
 @code {
+    private ElementReference swimmerInput;
+    private bool _focusPending;
+
     protected override async Task OnInitializedAsync()
     {
         formModel = new();
@@ -83,7 +86,29 @@
 
         await Storage.SaveAsync(ResultService.Results);
 
+        var eventNum = formModel.EventNumber;
         formModel = new(); // reset
+        formModel.EventNumber = eventNum;
+        _focusPending = true;  // tell OnAfterRender we need focus
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusPending)
+        {
+            _focusPending = false;          // reset flag
+            await swimmerInput.FocusAsync(); // now the element exists
+        }
+    }
+
+    private async Task FocusSwimmerAsync()
+    {
+        // let Blazor finish applying @bind before we focus
+        await InvokeAsync(async () =>
+        {
+            await Task.Yield();             // one render tick
+            await swimmerInput.FocusAsync(); // cursor jumps to Swimmer
+        });
     }
 
     private async Task Delete(Result r)
