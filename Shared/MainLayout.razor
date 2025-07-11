@@ -17,8 +17,8 @@
     </footer>
 </div>
 
-@code {{
-    [CascadingParameter] public TotalsVisibilityService? TotalsVisibility {{ get; set; }}
+@code {
+    [CascadingParameter] public TotalsVisibilityService? TotalsVisibility { get; set; }
     private bool showTotals => TotalsVisibility?.ShowTotals == true;
     private void ToggleTotals() => TotalsVisibility?.Toggle();
-}}
+}
