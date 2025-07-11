@@ -4,41 +4,60 @@
 @inject RosterService Roster
 @inject ScoringService Scoring
 
-<h3>Team Totals</h3>
-<table class="table table-bordered">
-    <thead><tr><th>Team</th><th>Points</th></tr></thead>
-    <tbody>
-        @foreach(var row in TeamTotals.OrderByDescending(t=>t.Value))
-        {
-            <tr><td>@row.Key</td><td>@row.Value</td></tr>
-        }
-    </tbody>
-</table>
-
-<h3>Age‑Group Totals</h3>
-@foreach(var grp in AgeGroups)
+@if (TotalsVisibility?.ShowTotals ?? true)
 {
-    <h5>@grp</h5>
-    <table class="table table-sm table-striped">
+    <h3>Team Totals</h3>
+    <table class="table table-bordered">
         <thead><tr><th>Team</th><th>Points</th></tr></thead>
         <tbody>
-            @foreach(var row in AgeGroupTotals[grp].OrderByDescending(t=>t.Value))
+            @foreach(var row in TeamTotals.OrderByDescending(t=>t.Value))
             {
                 <tr><td>@row.Key</td><td>@row.Value</td></tr>
             }
         </tbody>
     </table>
+
+    <h3>Age‑Group Totals</h3>
+    @foreach(var grp in AgeGroups)
+    {
+        <h5>@grp</h5>
+        <table class="table table-sm table-striped">
+            <thead><tr><th>Team</th><th>Points</th></tr></thead>
+            <tbody>
+                @foreach(var row in AgeGroupTotals[grp].OrderByDescending(t=>t.Value))
+                {
+                    <tr><td>@row.Key</td><td>@row.Value</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+else
+{
+    <p class="text-muted">Totals hidden.</p>
 }
 
+@implements IDisposable
 @code {
+    [CascadingParameter] public TotalsVisibilityService? TotalsVisibility { get; set; }
     private string[] AgeGroups = { "6 & U","7-8","9-10","11-12","13-14","15-18"};
     private Dictionary<string,int> TeamTotals = new();
     private Dictionary<string,Dictionary<string,int>> AgeGroupTotals = new();
 
-    protected override void OnParametersSet()
+    private void VisibilityChanged() => InvokeAsync(StateHasChanged);
+
+    protected override void OnInitialized()
     {
         Recalc();
-        ResultService.Results.CollectionChanged += (_,__) => { Recalc(); StateHasChanged(); };
+        ResultService.Results.CollectionChanged += (_,__) => { Recalc(); InvokeAsync(StateHasChanged); };
+        if (TotalsVisibility != null)
+            TotalsVisibility.OnChange += VisibilityChanged;
+    }
+
+    public void Dispose()
+    {
+        if (TotalsVisibility != null)
+            TotalsVisibility.OnChange -= VisibilityChanged;
     }
 
     private void Recalc()
