@@ -1,0 +1,129 @@
+
+@page "/entry"
+@inject EventLookupService EventLookup
+@inject RosterService Roster
+@inject ResultService ResultService
+@inject ScoringService Scoring
+@inject StorageService Storage
+
+<h3>Enter Result</h3>
+
+<EditForm Model="@formModel" OnValidSubmit="SaveResult">
+    <div class="mb-2">
+        <label>Event</label>
+        <select class="form-select" @bind="formModel.EventNumber">
+            <option value="0">Select...</option>
+            @foreach (var ev in EventLookup.All.Values.OrderBy(e=>e.Number))
+            {
+                <option value="@ev.Number">@ev.Label</option>
+            }
+        </select>
+    </div>
+    <div class="mb-2">
+        <label>Swimmer</label>
+        <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" />
+        <datalist id="swimmers">
+            @foreach(var s in Roster.All.OrderBy(s=>s.Display))
+            {
+                <option value="@s.Display"></option>
+            }
+        </datalist>
+    </div>
+    <div class="mb-2">
+        <label>Time (MM:SS.hh or SS.hh)</label>
+        <input class="form-control" @bind="formModel.TimeInput" />
+    </div>
+
+    <button class="btn btn-success" type="submit">Save</button>
+</EditForm>
+
+<hr/>
+<h4>Event Entries</h4>
+<table class="table table-sm">
+    <thead>
+        <tr><th>Event</th><th>Place</th><th>Swimmer</th><th>Team</th><th>Time</th><th>Points</th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var r in ResultService.Results.OrderBy(r=>r.EventNumber).ThenBy(r=>r.Place))
+        {
+            <tr>
+                <td>@r.EventNumber</td>
+                <td>@r.Place</td>
+                <td>@Roster.FindByKey(r.SwimmerKey)?.Display</td>
+                <td>@r.TeamAbbr</td>
+                <td>@TimeSpan.FromSeconds(r.TimeSeconds).ToString(@"m\:ss\.ff")</td>
+                <td>@Scoring.PointsForPlace(r.Place, r.IsRelay)</td>
+                <td><button class="btn btn-sm btn-danger" @onclick="() => Delete(r)">🗑️</button></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    protected override void OnInitialized()
+    {
+        formModel = new();
+    }
+
+    private FormModel formModel = new();
+
+    private async Task SaveResult()
+    {
+        // look up swimmer
+        var swimmer = Roster.All.FirstOrDefault(s => s.Display.Equals(formModel.SwimmerText, StringComparison.OrdinalIgnoreCase));
+        if (swimmer is null) return;
+        if (formModel.EventNumber == 0) return;
+        var ev = EventLookup.Get(formModel.EventNumber);
+        if (ev is null) return;
+
+        double timeSec = ParseTime(formModel.TimeInput);
+        var res = new Result(formModel.EventNumber, 0, swimmer.Key, swimmer.TeamAbbr, ev.IsRelay, timeSec);
+        ResultService.AddOrUpdate(res);
+
+        await Storage.SaveAsync(ResultService.Results);
+
+        formModel = new(); // reset
+    }
+
+    private void Delete(Result r)
+    {
+        // remove and re-add without this swimmer, easiest way
+        var toRemove = ResultService.Results.FirstOrDefault(x => x.EventNumber == r.EventNumber && x.SwimmerKey == r.SwimmerKey);
+        if(toRemove != null)
+        {
+            var list = ResultService.Results.ToList();
+            list.Remove(toRemove);
+            ResultService.Results.Clear();
+            foreach(var item in list) ResultService.Results.Add(item);
+
+            // workaround for recalculating places
+            foreach(var evNum in list.Select(l=>l.EventNumber).Distinct())
+            {
+                foreach(var rr in list.Where(l=>l.EventNumber==evNum))
+                    ResultService.AddOrUpdate(rr);
+            }
+            Storage.SaveAsync(ResultService.Results);
+        }
+    }
+
+    private static double ParseTime(string input)
+    {
+        // Accept mm:ss.hh or ss.hh
+        var parts = input.Trim().Split(':');
+        double seconds;
+        if(parts.Length == 2)
+        {
+            seconds = int.Parse(parts[0]) * 60 + double.Parse(parts[1]);
+        } else {
+            seconds = double.Parse(parts[0]);
+        }
+        return seconds;
+    }
+
+    private class FormModel
+    {
+        public int EventNumber { get; set; }
+        public string SwimmerText { get; set; } = string.Empty;
+        public string TimeInput { get; set; } = string.Empty;
+    }
+}

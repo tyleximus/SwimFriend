@@ -1,0 +1,68 @@
+
+@page "/totals"
+@inject ResultService ResultService
+@inject RosterService Roster
+@inject ScoringService Scoring
+
+<h3>Team Totals</h3>
+<table class="table table-bordered">
+    <thead><tr><th>Team</th><th>Points</th></tr></thead>
+    <tbody>
+        @foreach(var row in TeamTotals.OrderByDescending(t=>t.Value))
+        {
+            <tr><td>@row.Key</td><td>@row.Value</td></tr>
+        }
+    </tbody>
+</table>
+
+<h3>Age‑Group Totals</h3>
+@foreach(var grp in AgeGroups)
+{
+    <h5>@grp</h5>
+    <table class="table table-sm table-striped">
+        <thead><tr><th>Team</th><th>Points</th></tr></thead>
+        <tbody>
+            @foreach(var row in AgeGroupTotals[grp].OrderByDescending(t=>t.Value))
+            {
+                <tr><td>@row.Key</td><td>@row.Value</td></tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private string[] AgeGroups = { "6 & U","7-8","9-10","11-12","13-14","15-18"};
+    private Dictionary<string,int> TeamTotals = new();
+    private Dictionary<string,Dictionary<string,int>> AgeGroupTotals = new();
+
+    protected override void OnParametersSet()
+    {
+        Recalc();
+        ResultService.Results.CollectionChanged += (_,__) => { Recalc(); StateHasChanged(); };
+    }
+
+    private void Recalc()
+    {
+        TeamTotals = new();
+        AgeGroupTotals = AgeGroups.ToDictionary(a=>a, _=> new Dictionary<string,int>());
+        foreach(var r in ResultService.Results)
+        {
+            var pts = Scoring.PointsForPlace(r.Place, r.IsRelay);
+            // team
+            if(!TeamTotals.ContainsKey(r.TeamAbbr)) TeamTotals[r.TeamAbbr]=0;
+            TeamTotals[r.TeamAbbr]+=pts;
+
+            // individual scoring (no relay) to swimmer age group
+            if(!r.IsRelay)
+            {
+                var swimmer = Roster.FindByKey(r.SwimmerKey);
+                if(swimmer is not null)
+                {
+                    var ag = swimmer.AgeGroup;
+                    if(!AgeGroupTotals[ag].ContainsKey(r.TeamAbbr)) AgeGroupTotals[ag][r.TeamAbbr]=0;
+                    AgeGroupTotals[ag][r.TeamAbbr]+=pts;
+                }
+            }
+        }
+    }
+}

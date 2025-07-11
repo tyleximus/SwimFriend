@@ -1,0 +1,11 @@
+
+{
+    "name":"Conference Score Pad",
+    "short_name":"ScorePad",
+    "start_url":"/entry",
+    "scope":"/",
+    "display":"standalone",
+    "background_color":"#ffffff",
+    "theme_color":"#0d5713",
+    "icons":[]
+}

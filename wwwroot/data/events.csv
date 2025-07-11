@@ -1,0 +1,61 @@
+EventID,Gender,AgeGroup,Distance,Stroke,Relay
+1,Mixed,8 & Under,100 SC Meter,Medley,TRUE
+2,Mixed,10-Sep,100 SC Meter,Medley,TRUE
+3,Mixed,13-Nov,200 SC Meter,Medley,TRUE
+4,Mixed,14-18,200 SC Meter,Medley,TRUE
+5,Boys,6 & Under,25 SC Meter,Freestyle,FALSE
+6,Girls,6 & Under,25 SC Meter,Freestyle,FALSE
+7,Boys,8-Jul,25 SC Meter,Freestyle,FALSE
+8,Girls,8-Jul,25 SC Meter,Freestyle,FALSE
+9,Boys,10-Sep,25 SC Meter,Freestyle,FALSE
+10,Girls,10-Sep,25 SC Meter,Freestyle,FALSE
+11,Boys,12-Nov,50 SC Meter,Freestyle,FALSE
+12,Girls,12-Nov,50 SC Meter,Freestyle,FALSE
+13,Boys,13-14,50 SC Meter,Freestyle,FALSE
+14,Girls,13-14,50 SC Meter,Freestyle,FALSE
+15,Boys,15-18,50 SC Meter,Freestyle,FALSE
+16,Girls,15-18,50 SC Meter,Freestyle,FALSE
+17,Boys,6 & Under,25 SC Meter,Backstroke,FALSE
+18,Girls,6 & Under,25 SC Meter,Backstroke,FALSE
+19,Boys,8-Jul,25 SC Meter,Backstroke,FALSE
+20,Girls,8-Jul,25 SC Meter,Backstroke,FALSE
+21,Boys,10-Sep,25 SC Meter,Backstroke,FALSE
+22,Girls,10-Sep,25 SC Meter,Backstroke,FALSE
+23,Boys,12-Nov,50 SC Meter,Backstroke,FALSE
+24,Girls,12-Nov,50 SC Meter,Backstroke,FALSE
+25,Boys,13-14,50 SC Meter,Backstroke,FALSE
+26,Girls,13-14,50 SC Meter,Backstroke,FALSE
+27,Boys,15-18,50 SC Meter,Backstroke,FALSE
+28,Girls,15-18,50 SC Meter,Backstroke,FALSE
+29,Mixed,8 & Under,100 SC Meter,Freestyle,TRUE
+30,Mixed,10-Sep,100 SC Meter,Freestyle,TRUE
+31,Boys,8 & Under,25 SC Meter,Butterfly,FALSE
+32,Girls,8 & Under,25 SC Meter,Butterfly,FALSE
+33,Boys,10-Sep,25 SC Meter,Butterfly,FALSE
+34,Girls,10-Sep,25 SC Meter,Butterfly,FALSE
+35,Boys,12-Nov,50 SC Meter,Butterfly,FALSE
+36,Girls,12-Nov,50 SC Meter,Butterfly,FALSE
+37,Boys,13-14,50 SC Meter,Butterfly,FALSE
+38,Girls,13-14,50 SC Meter,Butterfly,FALSE
+39,Boys,15-18,50 SC Meter,Butterfly,FALSE
+40,Girls,15-18,50 SC Meter,Butterfly,FALSE
+41,Boys,8 & Under,25 SC Meter,Breaststroke,FALSE
+42,Girls,8 & Under,25 SC Meter,Breaststroke,FALSE
+43,Boys,10-Sep,25 SC Meter,Breaststroke,FALSE
+44,Girls,10-Sep,25 SC Meter,Breaststroke,FALSE
+45,Boys,12-Nov,50 SC Meter,Breaststroke,FALSE
+46,Girls,12-Nov,50 SC Meter,Breaststroke,FALSE
+47,Boys,13-14,50 SC Meter,Breaststroke,FALSE
+48,Girls,13-14,50 SC Meter,Breaststroke,FALSE
+49,Boys,15-18,50 SC Meter,Breaststroke,FALSE
+50,Girls,15-18,50 SC Meter,Breaststroke,FALSE
+51,Boys,10 & Under,100 SC Meter,IM,FALSE
+52,Girls,10 & Under,100 SC Meter,IM,FALSE
+53,Boys,12-Nov,100 SC Meter,IM,FALSE
+54,Girls,12-Nov,100 SC Meter,IM,FALSE
+55,Boys,13-14,100 SC Meter,IM,FALSE
+56,Girls,13-14,100 SC Meter,IM,FALSE
+57,Boys,15-18,100 SC Meter,IM,FALSE
+58,Girls,15-18,100 SC Meter,IM,FALSE
+59,Mixed,13-Nov,200 SC Meter,Freestyle,TRUE
+60,Mixed,14-18,200 SC Meter,Freestyle,TRUE

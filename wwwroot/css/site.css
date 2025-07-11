@@ -1,0 +1,8 @@
+
+:root{
+    --accent:#0d5713;
+}
+.btn-success{
+    background-color:var(--accent);
+    border-color:var(--accent);
+}
