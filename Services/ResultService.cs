@@ -56,5 +56,43 @@ namespace ConferenceScorePad.Services
             foreach(var evList in _byEvent.Values.SelectMany(x=>x))
                 Results.Add(evList);
         }
+
+        public void Remove(int eventNumber, string swimmerKey)
+        {
+            if (!_byEvent.TryGetValue(eventNumber, out var list))
+                return;
+
+            list.RemoveAll(r => r.SwimmerKey == swimmerKey);
+            if (list.Count == 0)
+            {
+                _byEvent.Remove(eventNumber);
+            }
+            else
+            {
+                list.Sort((a, b) => a.TimeSeconds.CompareTo(b.TimeSeconds));
+                double? prevTime = null;
+                int prevPlace = 0;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var current = list[i];
+                    int place;
+                    if (prevTime.HasValue && Math.Abs(current.TimeSeconds - prevTime.Value) < 0.0001)
+                    {
+                        place = prevPlace;
+                    }
+                    else
+                    {
+                        place = i + 1;
+                        prevPlace = place;
+                        prevTime = current.TimeSeconds;
+                    }
+                    list[i] = current with { Place = place };
+                }
+            }
+
+            Results.Clear();
+            foreach (var evList in _byEvent.Values.SelectMany(x => x))
+                Results.Add(evList);
+        }
     }
 }

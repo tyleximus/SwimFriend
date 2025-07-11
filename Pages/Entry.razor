@@ -60,9 +60,10 @@
 </table>
 
 @code {
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         formModel = new();
+        await EventLookup.InitializeAsync();
     }
 
     private FormModel formModel = new();
@@ -85,25 +86,10 @@
         formModel = new(); // reset
     }
 
-    private void Delete(Result r)
+    private async Task Delete(Result r)
     {
-        // remove and re-add without this swimmer, easiest way
-        var toRemove = ResultService.Results.FirstOrDefault(x => x.EventNumber == r.EventNumber && x.SwimmerKey == r.SwimmerKey);
-        if(toRemove != null)
-        {
-            var list = ResultService.Results.ToList();
-            list.Remove(toRemove);
-            ResultService.Results.Clear();
-            foreach(var item in list) ResultService.Results.Add(item);
-
-            // workaround for recalculating places
-            foreach(var evNum in list.Select(l=>l.EventNumber).Distinct())
-            {
-                foreach(var rr in list.Where(l=>l.EventNumber==evNum))
-                    ResultService.AddOrUpdate(rr);
-            }
-            Storage.SaveAsync(ResultService.Results);
-        }
+        ResultService.Remove(r.EventNumber, r.SwimmerKey);
+        await Storage.SaveAsync(ResultService.Results);
     }
 
     private static double ParseTime(string input)
