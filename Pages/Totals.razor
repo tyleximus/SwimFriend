@@ -6,31 +6,45 @@
 
 @if (TotalsVisibility?.ShowTotals ?? true)
 {
-    <h3>Team Totals</h3>
-    <table class="table table-bordered">
-        <thead><tr><th>Team</th><th>Points</th></tr></thead>
-        <tbody>
-            @foreach(var row in TeamTotals.OrderByDescending(t=>t.Value))
-            {
-                <tr><td>@row.Key</td><td>@row.Value</td></tr>
-            }
-        </tbody>
-    </table>
+    <div class="card my-4 shadow-sm">
+        <div class="card-header bg-success text-white fw-bold">Team Totals</div>
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                    <tr><th>Team</th><th>Points</th></tr>
+                </thead>
+                <tbody>
+                    @foreach(var row in TeamTotals.OrderByDescending(t=>t.Value))
+                    {
+                        <tr><td>@row.Key</td><td>@row.Value</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <h3>Age‑Group Totals</h3>
-    @foreach(var grp in AgeGroups)
-    {
-        <h5>@grp</h5>
-        <table class="table table-sm table-striped">
-            <thead><tr><th>Team</th><th>Points</th></tr></thead>
-            <tbody>
-                @foreach(var row in AgeGroupTotals[grp].OrderByDescending(t=>t.Value))
-                {
-                    <tr><td>@row.Key</td><td>@row.Value</td></tr>
-                }
-            </tbody>
-        </table>
-    }
+    <h2 class="mt-5 mb-3">Age‑Group Totals</h2>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach(var grp in AgeGroups)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header fw-bold">@grp</div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead class="table-light"><tr><th>Team</th><th>Points</th></tr></thead>
+                            <tbody>
+                                @foreach(var row in AgeGroupTotals[grp].OrderByDescending(t=>t.Value))
+                                {
+                                    <tr><td>@row.Key</td><td>@row.Value</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 }
 else
 {
