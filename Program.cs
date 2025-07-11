@@ -1,33 +1,35 @@
-
 using ConferenceScorePad;
 using ConferenceScorePad.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using System.Net.Http;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Http client for loading static data
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+// HttpClient that points at the site root
+builder.Services.AddScoped(sp =>
+    new HttpClient { BaseAddress = new(builder.HostEnvironment.BaseAddress) });
 
-// Register services
-builder.Services.AddSingleton<EventLookupService>();
+// DI registrations
+builder.Services.AddScoped<EventLookupService>();
+builder.Services.AddScoped<RosterService>();
 builder.Services.AddSingleton<ScoringService>();
 builder.Services.AddSingleton<ResultService>();
-builder.Services.AddSingleton<RosterService>();
 builder.Services.AddSingleton<TotalsVisibilityService>();
 builder.Services.AddScoped<StorageService>();
 
 var host = builder.Build();
 
-// preload events and any stored results
-var events = host.Services.GetRequiredService<EventLookupService>();
-await events.InitializeAsync();
+// PRELOAD lookup tables before the UI shows
+var http = host.Services.GetRequiredService<HttpClient>();
+await host.Services.GetRequiredService<EventLookupService>().InitializeAsync();
+await host.Services.GetRequiredService<RosterService>().InitializeAsync(http);
+
+// (Any stored results, etc.)
 var storage = host.Services.GetRequiredService<StorageService>();
-var resultService = host.Services.GetRequiredService<ResultService>();
+var resultSvc = host.Services.GetRequiredService<ResultService>();
 foreach (var r in await storage.LoadAsync())
-    resultService.AddOrUpdate(r);
+    resultSvc.AddOrUpdate(r);
 
 await host.RunAsync();

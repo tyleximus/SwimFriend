@@ -18,7 +18,7 @@ namespace ConferenceScorePad.Services
         {
             if (_events.Count > 0) return;
 
-            var csv = await _http.GetStringAsync("data/events.csv");
+            var csv = await _http.GetStringAsync("/data/events.csv");
             using var reader = new StringReader(csv);
             string? line;
             while ((line = reader.ReadLine()) != null)

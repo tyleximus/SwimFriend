@@ -24,6 +24,14 @@ namespace ConferenceScorePad.Services
                 _swimmers[key] = swimmer;
             }
         }
+        public async Task InitializeAsync(HttpClient http)
+        {
+            if (_swimmers.Count > 0) return;
+
+            var csv = await http.GetStringAsync("/data/roster.csv");
+            ImportCsv(csv);               // re-use your existing parser
+        }
+
 
         public IEnumerable<Swimmer> All => _swimmers.Values;
         public Swimmer? FindByKey(string key) => _swimmers.TryGetValue(key, out var s) ? s : null;
