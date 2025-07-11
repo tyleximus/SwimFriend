@@ -6,35 +6,45 @@
 
 @if (TotalsVisibility?.ShowTotals ?? true)
 {
-    <h3>Team Totals</h3>
-    <table class="table table-bordered">
-        <thead><tr><th>Team</th><th>Points</th></tr></thead>
-        <tbody>
-            @foreach(var row in TeamTotals.OrderByDescending(t=>t.Value))
-            {
-                <tr><td>@row.Key</td><td>@row.Value</td></tr>
-            }
-        </tbody>
-    </table>
+    <div class="card mb-4">
+        <div class="card-header">Team Totals</div>
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0">
+                <thead><tr><th>Team</th><th>Points</th></tr></thead>
+                <tbody>
+                    @foreach (var row in TeamTotals.OrderByDescending(t => t.Value))
+                    {
+                        <tr><td>@row.Key</td><td>@row.Value</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <h3>Age‑Group Totals</h3>
-    @foreach(var grp in AgeGroups)
-    {
-        <h5>@grp</h5>
-        <table class="table table-sm table-striped">
-            <thead><tr><th>Team</th><th>Points</th></tr></thead>
-            <tbody>
-                @foreach(var row in AgeGroupTotals[grp].OrderByDescending(t=>t.Value))
-                {
-                    <tr><td>@row.Key</td><td>@row.Value</td></tr>
-                }
-            </tbody>
-        </table>
-    }
+    <div class="card">
+        <div class="card-header">Age‑Group Totals</div>
+        <div class="card-body p-0">
+            @foreach (var grp in AgeGroups)
+            {
+                <div class="p-2 border-bottom fw-semibold bg-light">@grp</div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0">
+                        <thead><tr><th>Team</th><th>Points</th></tr></thead>
+                        <tbody>
+                            @foreach (var row in AgeGroupTotals[grp].OrderByDescending(t => t.Value))
+                            {
+                                <tr><td>@row.Key</td><td>@row.Value</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
 }
 else
 {
-    <p class="text-muted">Totals hidden.</p>
+    <div class="alert alert-info">Totals hidden.</div>
 }
 
 @implements IDisposable

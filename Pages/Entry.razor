@@ -6,58 +6,64 @@
 @inject ScoringService Scoring
 @inject StorageService Storage
 
-<h3>Enter Result</h3>
+<h3 class="mb-4">Enter Result</h3>
 
 <EditForm Model="@formModel" OnValidSubmit="SaveResult">
-    <div class="mb-2">
-        <label>Event</label>
-        <select class="form-select" @bind="formModel.EventNumber">
-            <option value="0">Select...</option>
-            @foreach (var ev in EventLookup.All.Values.OrderBy(e=>e.Number))
-            {
-                <option value="@ev.Number">@ev.Label</option>
-            }
-        </select>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+            <label class="form-label">Event</label>
+            <select class="form-select" @bind="formModel.EventNumber">
+                <option value="0">Select...</option>
+                @foreach (var ev in EventLookup.All.Values.OrderBy(e => e.Number))
+                {
+                    <option value="@ev.Number">@ev.Label</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Swimmer</label>
+            <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" />
+            <datalist id="swimmers">
+                @foreach (var s in Roster.All.OrderBy(s => s.Display))
+                {
+                    <option value="@s.Display"></option>
+                }
+            </datalist>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Time</label>
+            <input class="form-control" @bind="formModel.TimeInput" placeholder="MM:SS.hh or SS.hh" />
+        </div>
+        <div class="col-12">
+            <button class="btn btn-success" type="submit">Save</button>
+        </div>
     </div>
-    <div class="mb-2">
-        <label>Swimmer</label>
-        <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" />
-        <datalist id="swimmers">
-            @foreach(var s in Roster.All.OrderBy(s=>s.Display))
-            {
-                <option value="@s.Display"></option>
-            }
-        </datalist>
-    </div>
-    <div class="mb-2">
-        <label>Time (MM:SS.hh or SS.hh)</label>
-        <input class="form-control" @bind="formModel.TimeInput" />
-    </div>
-
-    <button class="btn btn-success" type="submit">Save</button>
 </EditForm>
 
-<hr/>
-<h4>Event Entries</h4>
-<table class="table table-sm">
-    <thead>
-        <tr><th>Event</th><th>Place</th><th>Swimmer</th><th>Team</th><th>Time</th><th>Points</th><th></th></tr>
-    </thead>
-    <tbody>
-        @foreach (var r in ResultService.Results.OrderBy(r=>r.EventNumber).ThenBy(r=>r.Place))
-        {
-            <tr>
-                <td>@r.EventNumber</td>
-                <td>@r.Place</td>
-                <td>@Roster.FindByKey(r.SwimmerKey)?.Display</td>
-                <td>@r.TeamAbbr</td>
-                <td>@TimeSpan.FromSeconds(r.TimeSeconds).ToString(@"m\:ss\.ff")</td>
-                <td>@Scoring.PointsForPlace(r.Place, r.IsRelay)</td>
-                <td><button class="btn btn-sm btn-danger" @onclick="() => Delete(r)">🗑️</button></td>
-            </tr>
-        }
-    </tbody>
-</table>
+<div class="card mt-4">
+    <div class="card-header">Event Entries</div>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr><th>Event</th><th>Place</th><th>Swimmer</th><th>Team</th><th>Time</th><th>Points</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in ResultService.Results.OrderBy(r => r.EventNumber).ThenBy(r => r.Place))
+                {
+                    <tr>
+                        <td>@r.EventNumber</td>
+                        <td>@r.Place</td>
+                        <td>@Roster.FindByKey(r.SwimmerKey)?.Display</td>
+                        <td>@r.TeamAbbr</td>
+                        <td>@TimeSpan.FromSeconds(r.TimeSeconds).ToString(@"m\:ss\.ff")</td>
+                        <td>@Scoring.PointsForPlace(r.Place, r.IsRelay)</td>
+                        <td><button class="btn btn-sm btn-danger" @onclick="() => Delete(r)">🗑️</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
 
 @code {
     protected override async Task OnInitializedAsync()
