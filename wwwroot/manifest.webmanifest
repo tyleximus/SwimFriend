@@ -1,7 +1,7 @@
 
 {
-    "name":"Conference Score Pad",
-    "short_name":"ScorePad",
+    "name":"MOWSC 2025",
+    "short_name":"Mowsc2025",
     "start_url":"/entry",
     "scope":"/",
     "display":"standalone",

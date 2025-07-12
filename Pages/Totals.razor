@@ -1,101 +1,233 @@
-
+<!-- Totals.razor – polished scoreboard with Bootstrap‑canonical accordion markup
+     Fixes double‑click issue by using <button class="accordion-button collapsed"> for toggles
+-->
 @page "/"
-@inject ResultService ResultService
-@inject RosterService Roster
-@inject ScoringService Scoring
+@implements IAsyncDisposable
 
-@if (TotalsVisibility?.ShowTotals ?? true)
-{
-    <div class="card my-4 shadow-sm">
-        <div class="card-header bg-success text-white fw-bold">Team Totals</div>
-        <div class="card-body p-0">
-            <table class="table table-striped table-hover mb-0">
-                <thead>
-                    <tr><th>Team</th><th>Points</th></tr>
-                </thead>
+@inject ResultService ResultService
+@inject RosterService RosterService
+@inject ScoringService Scoring
+@inject NavigationManager Nav
+@inject HttpClient Http
+
+<div class="container-fluid py-3">
+    <!-- ========================= TEAM TOTALS ========================= -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h2 fw-bold mb-3">Team Totals</h2>
+            <table class="table align-middle mb-0">
                 <tbody>
-                    @foreach(var row in TeamTotals.OrderByDescending(t=>t.Value))
+                    @foreach (var (team, pts, delta, idx) in TeamRows)
                     {
-                        <tr><td>@row.Key</td><td>@row.Value</td></tr>
+                        var barPercent = (double)pts / (double)MaxPoints;
+                        var barWidth = Math.Round(barPercent * 100, 0);
+                        var isLeader = idx == 0;
+                        <tr class="@((isLeader ? "table-success" : idx % 2 == 1 ? "table-light" : string.Empty))">
+                            @* <td style="width:48px">
+                                <span class="badge bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center" style="width:38px;height:38px;">@team[..Math.Min(2, team.Length)]</span>
+                            </td> *@
+                            <td style="width:48px">
+                                <img src="@GetTeamLogo(team)" alt="@team logo" title="@team" class="team-logo" />
+                            </td>
+                            <td class="fw-semibold">@GetTeamFullName(team)</td>
+                            <td class="text-end fs-5 fw-bold">@pts</td>
+                            <td class="text-muted ps-2">@(delta == 0 ? "" : (delta > 0 ? $"+{delta}" : delta.ToString()))</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" class="pb-2">
+                                <div class="progress" style="height:6px">
+                                    <div class="progress-bar bg-success" style="width:@barWidth%"></div>
+                                </div>
+                            </td>
+                        </tr>
                     }
                 </tbody>
             </table>
         </div>
     </div>
 
-    <h2 class="mt-5 mb-3">Age‑Group Totals</h2>
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        @foreach(var grp in AgeGroups)
-        {
-            <div class="col">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-header fw-bold">@grp</div>
-                    <div class="card-body p-0">
-                        <table class="table table-sm table-striped mb-0">
-                            <thead class="table-light"><tr><th>Team</th><th>Points</th></tr></thead>
-                            <tbody>
-                                @foreach(var row in AgeGroupTotals[grp].OrderByDescending(t=>t.Value))
-                                {
-                                    <tr><td>@row.Key</td><td>@row.Value</td></tr>
-                                }
-                            </tbody>
-                        </table>
+    <!-- ====================== AGE‑GROUP TOTALS ======================= -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="h2 fw-bold">Age Group Totals</h2>
+            <div class="accordion" id="ageAcc">
+                @foreach (var ag in AgeGroups)
+                {
+                    var collapseId = $"collapse_{ag.Replace(" ", "_").Replace("&", "and")}";
+                    var headingId = $"heading_{collapseId}";
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="@headingId">
+                            <!-- key fix:   button + data‑bs‑target → no more double‑click -->
+                            <button class="accordion-button collapsed fw-semibold" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#@collapseId"
+                                    aria-expanded="false" aria-controls="@collapseId">
+                                @ag
+                            </button>
+                        </h2>
+                        <div id="@collapseId" class="accordion-collapse collapse" data-bs-parent="#ageAcc" aria-labelledby="@headingId">
+                            <div class="accordion-body p-0">
+                                <table class="table table-sm mb-0 align-middle">
+                                    <thead class="table-light position-sticky top-0" style="z-index:1">
+                                        <tr><th>Swimmer</th><th>Team</th><th class="text-end">Points</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var row in SwimmerRows[ag])
+                                        {
+                                            <tr>
+                                                <td>@row.Swimmer</td>
+                                                <td>@row.Team</td>
+                                                <td class="text-end fw-semibold">@row.Points</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                }
             </div>
-        }
+        </div>
     </div>
-}
-else
-{
-    <p class="text-muted">Totals hidden.</p>
-}
+</div>
 
-@implements IDisposable
 @code {
-    [CascadingParameter] public TotalsVisibilityService? TotalsVisibility { get; set; }
-    private string[] AgeGroups = { "6 & U","7-8","9-10","11-12","13-14","15-18"};
-    private Dictionary<string,int> TeamTotals = new();
-    private Dictionary<string,Dictionary<string,int>> AgeGroupTotals = new();
+    // ---------- data holders ----------
+    private readonly string[] BaseAges = { "6 & U", "7-8", "9-10", "11-12", "13-14", "15-18" };
+    private string[] AgeGroups => BaseAges
+        .SelectMany(ag => new[] { $"Boys {ag}", $"Girls {ag}" })
+        .ToArray();
+    private List<(string Team, int Points, int Delta, int Index)> TeamRows = new();
+    private Dictionary<string, List<(string Swimmer, string Team, int Points)>> SwimmerRows = new();
+    private int MaxPoints;
+    private Dictionary<string, string> TeamNames = new();
 
-    private void VisibilityChanged() => InvokeAsync(StateHasChanged);
-
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        Recalc();
-        ResultService.Results.CollectionChanged += (_,__) => { Recalc(); InvokeAsync(StateHasChanged); };
-        if (TotalsVisibility != null)
-            TotalsVisibility.OnChange += VisibilityChanged;
+        await LoadTeamNamesAsync();
+        Recalc();           // run once names are available
     }
 
-    public void Dispose()
+    private async Task LoadTeamNamesAsync()
     {
-        if (TotalsVisibility != null)
-            TotalsVisibility.OnChange -= VisibilityChanged;
+        try
+        {
+            // wwwroot/data/teams.json:  { "CHILL": "Cumberland Hill Catfish", "CROCS": "Carolina Crocodiles", ... }
+            TeamNames = await Http.GetFromJsonAsync<Dictionary<string, string>>("data/teams.json")
+                        ?? new();
+        }
+        catch
+        {
+            // Fall back gracefully – abbreviations will be shown if JSON missing
+            TeamNames = new();
+        }
+    }
+
+    private string GetTeamFullName(string abbr)
+    => TeamNames.TryGetValue(abbr, out var name) ? name : abbr;
+
+    protected override void OnParametersSet()
+    {
+        Recalc();
+        ResultService.Results.CollectionChanged += (_, __) => { Recalc(); InvokeAsync(StateHasChanged); };
     }
 
     private void Recalc()
     {
-        TeamTotals = new();
-        AgeGroupTotals = AgeGroups.ToDictionary(a=>a, _=> new Dictionary<string,int>());
-        foreach(var r in ResultService.Results)
-        {
-            var pts = Scoring.PointsForPlace(r.Place, r.IsRelay);
-            // team
-            if(!TeamTotals.ContainsKey(r.TeamAbbr)) TeamTotals[r.TeamAbbr]=0;
-            TeamTotals[r.TeamAbbr]+=pts;
+        // compute team totals + deltas
+        var current = ResultService.Results.ToList();
+        var grouped = current.GroupBy(r => r.TeamAbbr)
+                             .Select(g => (Team: g.Key, Points: g.Sum(r => Scoring.PointsForPlace(r.Place, r.IsRelay))))
+                             .OrderByDescending(x => x.Points)
+                             .ToList();
+        MaxPoints = grouped.FirstOrDefault().Points;
+        TeamRows = grouped.Select((t, i) => (t.Team, t.Points, 0, i)).ToList(); // TODO: real delta calc
 
-            // individual scoring (no relay) to swimmer age group
-            if(!r.IsRelay)
+        // prepare 12 empty buckets
+        SwimmerRows = AgeGroups.ToDictionary(_ => _, _ => new List<(string Swimmer, string Team, int Points)>());
+
+        // 1) collect individual results only and bucket by swimmer
+        var swimmerTotals = ResultService.Results
+            .Where(r => !r.IsRelay)
+            .GroupBy(r => r.SwimmerKey)
+            .Select(g => new
             {
-                var swimmer = Roster.FindByKey(r.SwimmerKey);
-                if(swimmer is not null)
-                {
-                    var ag = swimmer.AgeGroup;
-                    if(!AgeGroupTotals[ag].ContainsKey(r.TeamAbbr)) AgeGroupTotals[ag][r.TeamAbbr]=0;
-                    AgeGroupTotals[ag][r.TeamAbbr]+=pts;
-                }
-            }
+                SwimmerKey = g.Key,
+                TotalPoints = g.Sum(r => Scoring.PointsForPlace(r.Place, false))
+            });
+
+        foreach (var st in swimmerTotals)
+        {
+            var sw = RosterService.FindByKey(st.SwimmerKey);
+            if (sw is null) continue;
+
+            // NEW – Boys | Girls bucket
+            var genderText = sw.Gender.StartsWith("M", StringComparison.OrdinalIgnoreCase) ? "Boys" : "Girls";
+            var bucket = $"{genderText} {sw.AgeGroup}";
+
+            SwimmerRows[bucket].Add((sw.Display, sw.TeamAbbr, st.TotalPoints));
         }
+
+        // sort each bucket
+        foreach (var ag in AgeGroups)
+            SwimmerRows[ag] = SwimmerRows[ag]
+                .OrderByDescending(x => x.Points)
+                .ThenBy(x => x.Team)
+                .ThenBy(x => x.Swimmer)
+                .ToList();
+
+    }
+
+    private static string GetTeamLogo(string abbr)
+    => $"/img/{abbr.ToLowerInvariant()}.webp";
+
+    public async ValueTask DisposeAsync()
+    {
+        // detach event to avoid memory leaks when navigating away
+        ResultService.Results.CollectionChanged -= (_, __) => { };
     }
 }
+
+
+<style>
+    /* accent colour reuse */
+    :root {
+        --accent: #0d5713;
+    }
+
+    .bg-accent {
+        background-color: var(--accent) !important;
+    }
+
+    .team-row.leader {
+        background: var(--accent);
+        color: #fff;
+    }
+
+        .team-row.leader .progress {
+            background: #fff3;
+        }
+
+    .team-badge {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: .8rem;
+        border: 1px solid #ccc;
+        border-radius: 50%;
+    }
+
+    .dark-mode .team-row.leader {
+        background: #083b0c;
+    }
+
+    .team-logo {
+        width: 38px; /* matches the old badge diameter */
+        height: 38px;
+        object-fit: contain; /* letter-boxed if aspect ≠ 1:1 */
+        display: block;
+    }
+
+</style>

@@ -21,17 +21,17 @@
     </div>
     <div class="mb-2">
         <label>Swimmer</label>
-        <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" @ref="swimmerInput" />
+        <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" @bind:after="FocusTimeAsync" @ref="_swimmerInput" />
         <datalist id="swimmers">
             @foreach(var s in Roster.All.OrderBy(s=>s.Display))
             {
-                <option value="@s.Display"></option>
+                <option value="@s.Display" label="@FormatLabel(s)"></option>
             }
         </datalist>
     </div>
     <div class="mb-2">
         <label>Time (MM:SS.hh or SS.hh)</label>
-        <input class="form-control" @bind="formModel.TimeInput" />
+        <input class="form-control" @bind="formModel.TimeInput" @ref="_timeInput" />
     </div>
 
     <button class="btn btn-success" type="submit">Save</button>
@@ -60,7 +60,8 @@
 </table>
 
 @code {
-    private ElementReference swimmerInput;
+    private ElementReference _swimmerInput;
+    private ElementReference _timeInput;
     private bool _focusPending;
 
     protected override async Task OnInitializedAsync()
@@ -97,7 +98,7 @@
         if (_focusPending)
         {
             _focusPending = false;          // reset flag
-            await swimmerInput.FocusAsync(); // now the element exists
+            await _swimmerInput.FocusAsync(); // now the element exists
         }
     }
 
@@ -107,7 +108,17 @@
         await InvokeAsync(async () =>
         {
             await Task.Yield();             // one render tick
-            await swimmerInput.FocusAsync(); // cursor jumps to Swimmer
+            await _swimmerInput.FocusAsync(); // cursor jumps to Swimmer
+        });
+    }
+
+    private async Task FocusTimeAsync()
+    {
+        // let Blazor finish applying @bind before we focus
+        await InvokeAsync(async () =>
+        {
+            await Task.Yield();             // one render tick
+            await _timeInput.FocusAsync(); // cursor jumps to Time
         });
     }
 
@@ -130,6 +141,12 @@
         }
         return seconds;
     }
+
+    private static string FormatLabel(Swimmer s)
+    {
+        return $"{s.FirstName} {s.LastName} ({s.Gender} {s.Age} {s.TeamAbbr})";
+    }
+
 
     private class FormModel
     {
