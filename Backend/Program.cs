@@ -3,7 +3,32 @@ using ConferenceScorePad.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Register Swagger/OpenAPI services
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Allow CORS from any origin so the Blazor client can access the API
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
+
+// Enable CORS
+app.UseCors();
+
+// Enable Swagger in development
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 string dataPath = Path.Combine(app.Environment.ContentRootPath, "Data", "results.json");
 
