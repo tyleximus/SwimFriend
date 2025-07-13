@@ -1,31 +1,35 @@
 
 using ConferenceScorePad.Models;
-using Microsoft.JSInterop;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace ConferenceScorePad.Services
 {
     public class StorageService
     {
-        private readonly IJSRuntime _js;
-        private const string Key = "conference-score-pad-data";
+        private readonly HttpClient _http;
 
-        public StorageService(IJSRuntime js)
+        public StorageService(HttpClient http)
         {
-            _js = js;
+            _http = http;
         }
 
         public async Task SaveAsync(IEnumerable<Result> results)
         {
-            var json = JsonSerializer.Serialize(results);
-            await _js.InvokeVoidAsync("localforage.setItem", Key, json);
+            await _http.PostAsJsonAsync("api/results", results);
         }
 
         public async Task<IEnumerable<Result>> LoadAsync()
         {
-            var json = await _js.InvokeAsync<string>("localforage.getItem", Key);
-            if(string.IsNullOrWhiteSpace(json)) return Enumerable.Empty<Result>();
-            return JsonSerializer.Deserialize<IEnumerable<Result>>(json) ?? Enumerable.Empty<Result>();
+            try
+            {
+                var data = await _http.GetFromJsonAsync<List<Result>>("api/results");
+                return data ?? Enumerable.Empty<Result>();
+            }
+            catch
+            {
+                return Enumerable.Empty<Result>();
+            }
         }
     }
 }
