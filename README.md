@@ -10,7 +10,7 @@ visitors share the same data.
    ```bash
    dotnet run --project Backend
    ```
-   This will listen on the default ports and manage `Data/results.json`.
+   The service listens at `https://localhost:7263` and manages `Data/results.json`.
 
 2. In another terminal run the WebAssembly app:
    ```bash
