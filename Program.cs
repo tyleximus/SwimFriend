@@ -9,7 +9,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 // HttpClient that points at the site root
 builder.Services.AddScoped(sp =>
-    new HttpClient { BaseAddress = new(builder.HostEnvironment.BaseAddress) });
+    new HttpClient { BaseAddress = new("https://localhost:7263/") });
 
 // DI registrations
 builder.Services.AddScoped<EventLookupService>();
