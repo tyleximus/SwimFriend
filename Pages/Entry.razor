@@ -5,13 +5,14 @@
 @inject ResultService ResultService
 @inject ScoringService Scoring
 @inject StorageService Storage
+@inject HttpClient Http
 
 <h3>Enter Result</h3>
 
 <EditForm Model="@formModel" OnValidSubmit="SaveResult">
     <div class="mb-2">
         <label>Event</label>
-        <select class="form-select" @bind="formModel.EventNumber" @bind:after="FocusSwimmerAsync">
+        <select class="form-select" @bind="formModel.EventNumber" @bind:after="FocusFirstFieldAsync">
             <option value="0">Select...</option>
             @foreach (var ev in EventLookup.All.Values.OrderBy(e=>e.Number))
             {
@@ -19,16 +20,42 @@
             }
         </select>
     </div>
-    <div class="mb-2">
-        <label>Swimmer</label>
-        <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" @bind:after="FocusTimeAsync" @ref="_swimmerInput" />
-        <datalist id="swimmers">
-            @foreach(var s in Roster.All.OrderBy(s=>s.Display))
-            {
-                <option value="@s.Display" label="@FormatLabel(s)"></option>
-            }
-        </datalist>
-    </div>
+    @if (IsRelaySelected)
+    {
+        <div class="mb-2">
+            <label>Team</label>
+            <select class="form-select" @bind="formModel.TeamAbbr" @bind:after="FocusLetterAsync" @ref="_teamInput">
+                <option value="">Select...</option>
+                @foreach (var t in Teams.OrderBy(t => t.Name))
+                {
+                    <option value="@t.Abbr">@t.Name</option>
+                }
+            </select>
+        </div>
+        <div class="mb-2">
+            <label>Letter</label>
+            <select class="form-select" @bind="formModel.RelayLetter" @bind:after="FocusTimeAsync" @ref="_letterInput">
+                <option value="">Select...</option>
+                @foreach (var l in RelayLetters)
+                {
+                    <option value="@l">@l</option>
+                }
+            </select>
+        </div>
+    }
+    else
+    {
+        <div class="mb-2">
+            <label>Swimmer</label>
+            <input class="form-control" @bind="formModel.SwimmerText" placeholder="Type swimmer name" list="swimmers" @bind:after="FocusTimeAsync" @ref="_swimmerInput" />
+            <datalist id="swimmers">
+                @foreach(var s in Roster.All.OrderBy(s=>s.Display))
+                {
+                    <option value="@s.Display" label="@FormatLabel(s)"></option>
+                }
+            </datalist>
+        </div>
+    }
     <div class="mb-2">
         <label>Time (MM:SS.hh or SS.hh)</label>
         <input class="form-control" @bind="formModel.TimeInput" @ref="_timeInput" />
@@ -41,7 +68,7 @@
 <h4>Event Entries</h4>
 <table class="table table-sm">
     <thead>
-        <tr><th>Event</th><th>Place</th><th>Swimmer</th><th>Team</th><th>Time</th><th>Points</th><th></th></tr>
+        <tr><th>Event</th><th>Place</th><th>Entry</th><th>Team</th><th>Time</th><th>Points</th><th></th></tr>
     </thead>
     <tbody>
         @foreach (var r in ResultService.Results.OrderBy(r=>r.EventNumber).ThenBy(r=>r.Place))
@@ -49,7 +76,7 @@
             <tr>
                 <td>@r.EventNumber</td>
                 <td>@r.Place</td>
-                <td>@Roster.FindByKey(r.SwimmerKey)?.Display</td>
+                <td>@DisplayResult(r)</td>
                 <td>@r.TeamAbbr</td>
                 <td>@TimeSpan.FromSeconds(r.TimeSeconds).ToString(@"m\:ss\.ff")</td>
                 <td>@Scoring.PointsForPlace(r.Place, r.IsRelay)</td>
@@ -61,28 +88,42 @@
 
 @code {
     private ElementReference _swimmerInput;
+    private ElementReference _teamInput;
+    private ElementReference _letterInput;
     private ElementReference _timeInput;
     private bool _focusPending;
+    private readonly string[] RelayLetters = new[] { "A", "B", "C" };
+    private List<TeamInfo> Teams = new();
 
     protected override async Task OnInitializedAsync()
     {
         formModel = new();
         await EventLookup.InitializeAsync();
+        Teams = await Http.GetFromJsonAsync<List<TeamInfo>>("data/teams.json") ?? new();
     }
 
     private FormModel formModel = new();
 
     private async Task SaveResult()
     {
-        // look up swimmer
-        var swimmer = Roster.All.FirstOrDefault(s => s.Display.Equals(formModel.SwimmerText, StringComparison.OrdinalIgnoreCase));
-        if (swimmer is null) return;
         if (formModel.EventNumber == 0) return;
         var ev = EventLookup.Get(formModel.EventNumber);
         if (ev is null) return;
 
         double timeSec = ParseTime(formModel.TimeInput);
-        var res = new Result(formModel.EventNumber, 0, swimmer.Key, swimmer.TeamAbbr, ev.IsRelay, timeSec);
+        Result res;
+        if (ev.IsRelay)
+        {
+            if (string.IsNullOrWhiteSpace(formModel.TeamAbbr) || string.IsNullOrWhiteSpace(formModel.RelayLetter)) return;
+            var key = $"{formModel.TeamAbbr}_{formModel.RelayLetter}";
+            res = new Result(formModel.EventNumber, 0, key, formModel.TeamAbbr, true, timeSec);
+        }
+        else
+        {
+            var swimmer = Roster.All.FirstOrDefault(s => s.Display.Equals(formModel.SwimmerText, StringComparison.OrdinalIgnoreCase));
+            if (swimmer is null) return;
+            res = new Result(formModel.EventNumber, 0, swimmer.Key, swimmer.TeamAbbr, false, timeSec);
+        }
         ResultService.AddOrUpdate(res);
 
         await Storage.SaveAsync(ResultService.Results);
@@ -98,17 +139,31 @@
         if (_focusPending)
         {
             _focusPending = false;          // reset flag
-            await _swimmerInput.FocusAsync(); // now the element exists
+            if (IsRelaySelected)
+                await _teamInput.FocusAsync();
+            else
+                await _swimmerInput.FocusAsync();
         }
     }
 
-    private async Task FocusSwimmerAsync()
+    private async Task FocusFirstFieldAsync()
     {
-        // let Blazor finish applying @bind before we focus
         await InvokeAsync(async () =>
         {
-            await Task.Yield();             // one render tick
-            await _swimmerInput.FocusAsync(); // cursor jumps to Swimmer
+            await Task.Yield();
+            if (IsRelaySelected)
+                await _teamInput.FocusAsync();
+            else
+                await _swimmerInput.FocusAsync();
+        });
+    }
+
+    private async Task FocusLetterAsync()
+    {
+        await InvokeAsync(async () =>
+        {
+            await Task.Yield();
+            await _letterInput.FocusAsync();
         });
     }
 
@@ -147,11 +202,25 @@
         return $"({s.Gender} {s.Age} {s.TeamAbbr})";
     }
 
+    private string DisplayResult(Result r)
+    {
+        if (!r.IsRelay)
+        {
+            return Roster.FindByKey(r.SwimmerKey)?.Display ?? r.SwimmerKey;
+        }
+        var letter = r.SwimmerKey.Split('_').Last();
+        var name = Teams.FirstOrDefault(t => t.Abbr == r.TeamAbbr)?.Name ?? r.TeamAbbr;
+        return $"{name} - {letter}";
+    }
+
+    private bool IsRelaySelected => EventLookup.Get(formModel.EventNumber)?.IsRelay == true;
 
     private class FormModel
     {
         public int EventNumber { get; set; }
         public string SwimmerText { get; set; } = string.Empty;
         public string TimeInput { get; set; } = string.Empty;
+        public string TeamAbbr { get; set; } = string.Empty;
+        public string RelayLetter { get; set; } = string.Empty;
     }
 }
