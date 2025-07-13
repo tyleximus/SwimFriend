@@ -62,5 +62,5 @@ jobs:
         with:
           app-name: 'liveatticusswims'
           slot-name: 'Production'
-          package: .
+          package: ./.net-app
           
