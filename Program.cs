@@ -12,8 +12,14 @@ builder.Services.AddScoped(sp =>
     new HttpClient { BaseAddress = new(builder.HostEnvironment.BaseAddress) });
 
 // Separate client for backend API calls
+var backendUrl = builder.Configuration["BackendUrl"];
 builder.Services.AddHttpClient("backend", client =>
-    client.BaseAddress = new("https://localhost:7263/"));
+{
+    var url = string.IsNullOrWhiteSpace(backendUrl)
+        ? builder.HostEnvironment.BaseAddress
+        : backendUrl;
+    client.BaseAddress = new(url);
+});
 
 // DI registrations
 builder.Services.AddScoped<EventLookupService>();

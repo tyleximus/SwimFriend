@@ -3,6 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Environment.IsDevelopment())
+{
+    builder.WebHost.UseWebRoot(Path.Combine("..", "wwwroot"));
+}
 
 // Register Swagger/OpenAPI services
 builder.Services.AddEndpointsApiExplorer();
@@ -30,6 +34,10 @@ var app = builder.Build();
 
 // Enable CORS
 app.UseCors();
+
+// Serve the Blazor WebAssembly files
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 // Enable Swagger in development
 if (app.Environment.IsDevelopment())
@@ -59,5 +67,8 @@ app.MapPost("/api/results", async ([FromBody] List<Result> results) =>
     await File.WriteAllTextAsync(dataPath, json);
     return Results.Ok();
 });
+
+// Fallback for client-side routes
+app.MapFallbackToFile("index.html");
 
 app.Run();

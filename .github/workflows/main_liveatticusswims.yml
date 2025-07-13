@@ -26,14 +26,23 @@ jobs:
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+      - name: Publish client
+        run: dotnet publish ConferenceScorePad.csproj -c Release -o clientapp
+
+      - name: Publish backend
+        run: dotnet publish Backend/Backend.csproj -c Release -o app
+
+      - name: Copy client to backend wwwroot
+        run: |
+          mkdir -p app/wwwroot
+          cp -r clientapp/wwwroot/* app/wwwroot/
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: app
+
 
   deploy:
     runs-on: windows-latest
