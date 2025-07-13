@@ -22,4 +22,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Backend\**\*.cs" />
+  </ItemGroup>
 </Project>
