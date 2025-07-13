@@ -7,9 +7,13 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// HttpClient that points at the site root
+// HttpClient for static files (CSV/JSON) served by the Blazor app
 builder.Services.AddScoped(sp =>
-    new HttpClient { BaseAddress = new("https://localhost:7263/") });
+    new HttpClient { BaseAddress = new(builder.HostEnvironment.BaseAddress) });
+
+// Separate client for backend API calls
+builder.Services.AddHttpClient("backend", client =>
+    client.BaseAddress = new("https://localhost:7263/"));
 
 // DI registrations
 builder.Services.AddScoped<EventLookupService>();
