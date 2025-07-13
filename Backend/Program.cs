@@ -1,11 +1,19 @@
-using System.Text.Json;
 using ConferenceScorePad.Models;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Register Swagger/OpenAPI services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Program.cs -- configure server JSON options
+builder.Services.Configure<JsonOptions>(opts =>
+{
+    opts.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    opts.JsonSerializerOptions.PropertyNameCaseInsensitive = true;  // optional safety net
+});
 
 // Allow CORS from any origin so the Blazor client can access the API
 builder.Services.AddCors(options =>
@@ -44,7 +52,7 @@ app.MapGet("/api/results", async () =>
     return Results.Ok(results);
 });
 
-app.MapPost("/api/results", async (IEnumerable<Result> results) =>
+app.MapPost("/api/results", async ([FromBody] List<Result> results) =>
 {
     Directory.CreateDirectory(Path.GetDirectoryName(dataPath)!);
     var json = JsonSerializer.Serialize(results);

@@ -103,6 +103,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Recalc();
         await LoadTeamNamesAsync();
         Recalc();           // run once names are available
     }
